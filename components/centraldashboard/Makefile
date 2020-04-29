@@ -4,7 +4,7 @@ PROJECT ?= kubeflow-dev
 REGISTRY_PROJECT ?= kubeflow-dev
 KUBEFLOWVERSION ?= 0.7.0
 
-IMG ?= gcr.io/$(REGISTRY_PROJECT)/centraldashboard
+IMG ?= xpacrdemo.azurecr.io/$(REGISTRY_PROJECT)/centraldashboard
 
 # List any changed  files. We only include files in the notebooks directory.
 # because that is the code in the docker image.
@@ -43,6 +43,7 @@ build:
 	  --build-arg kubeflowversion=$(shell git describe --abbrev=0 --tags) \
 	  --build-arg commit=$(shell git rev-parse HEAD) \
       --label=git-verions=$(GIT_VERSION)
+	  --shm-size=1gb
 	docker tag $(IMG):$(TAG) $(IMG):latest
 	@echo Built $(IMG):latest
 	@echo Built $(IMG):$(TAG)

@@ -369,7 +369,7 @@ func virtualServiceName(kfName string, namespace string) string {
 	return fmt.Sprintf("notebook-%s-%s", namespace, kfName)
 }
 
-func generateVirtualService(instance *v1beta1.Notebook) (*unstructured.Unstructured, error) {
+func generateVirtualService(instance *v1beta1.Notebook, gatewayPrefix string) (*unstructured.Unstructured, error) {
 	name := instance.Name
 	namespace := instance.Namespace
 	prefix := fmt.Sprintf("/notebook/%s/%s/", namespace, name)
@@ -388,8 +388,22 @@ func generateVirtualService(instance *v1beta1.Notebook) (*unstructured.Unstructu
 
 	istioGateway := os.Getenv("ISTIO_GATEWAY")
 	if len(istioGateway) == 0 {
-		istioGateway = "kubeflow/kubeflow-gateway"
+		if len(gatewayPrefix) == 0 {
+			gatewayPrefix = "kubeflow"
+		}
+		istioGateway = gatewayPrefix + "/kubeflow-gateway"
+	} else {
+		if len(gatewayPrefix) > 0 {
+			idx := strings.IndexAny(istioGateway, "/")
+			if idx == -1 {
+				istioGateway = gatewayPrefix + "/" + istioGateway
+			} else {
+				//override to use gatewayPrefix if user specified any namespace
+				istioGateway = gatewayPrefix + istioGateway[idx:]
+			}
+		}
 	}
+
 	if err := unstructured.SetNestedStringSlice(vsvc.Object, []string{istioGateway},
 		"spec", "gateways"); err != nil {
 		return nil, fmt.Errorf("Set .spec.gateways error: %v", err)
@@ -429,8 +443,23 @@ func generateVirtualService(instance *v1beta1.Notebook) (*unstructured.Unstructu
 }
 
 func (r *NotebookReconciler) reconcileVirtualService(instance *v1beta1.Notebook) error {
+	ctx := context.Background()
 	log := r.Log.WithValues("notebook", instance.Namespace)
-	virtualService, err := generateVirtualService(instance)
+
+	foundNs := &corev1.Namespace{}
+	err := r.Get(ctx, types.NamespacedName{Name: instance.Namespace}, foundNs)
+	if err != nil {
+		log.Error(err, "Error while getting namespace resource obj, ", "Namespace: ", instance.Namespace)
+		return err
+	}
+	var gatewayPrefix = ""
+	if foundNs.Labels != nil {
+		if rootNs, ok := foundNs.Labels["root-ns"]; ok {
+			gatewayPrefix = rootNs
+		}
+	}
+
+	virtualService, err := generateVirtualService(instance, gatewayPrefix)
 	if err := ctrl.SetControllerReference(instance, virtualService, r.Scheme); err != nil {
 		return err
 	}
@@ -479,7 +508,7 @@ func nbNameFromInvolvedObject(c client.Client, object *v1.ObjectReference) (stri
 		pod := &corev1.Pod{}
 		err := c.Get(
 			context.TODO(),
-			types.NamespacedName {
+			types.NamespacedName{
 				Namespace: namespace,
 				Name:      name,
 			},

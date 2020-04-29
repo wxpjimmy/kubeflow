@@ -16,7 +16,12 @@ RUN apk update && apk upgrade && \
     freetype@edge \
     harfbuzz@edge \
     ttf-freefont@edge \
-    libstdc++@edge
+    libstdc++@edge \
+    ca-certificates@edge \
+    yarn
+
+# Puppeteer v1.19.0 works with Chromium 77.
+RUN yarn add puppeteer@1.19.0
 
 RUN if [ "$(uname -m)" = "aarch64" ]; then \
         apk update && apk upgrade && \
@@ -26,17 +31,17 @@ RUN if [ "$(uname -m)" = "aarch64" ]; then \
 COPY . /centraldashboard
 WORKDIR /centraldashboard
 
-RUN npm rebuild && \
-    if [ "$(uname -m)" = "aarch64" ]; then \
-        export CFLAGS=-Wno-error && \
-        export CXXFLAGS=-Wno-error && \
-        npm install; \
-    else \
-        npm install; \
-    fi && \
-    npm test && \
-    npm run build && \
-    npm prune --production
+RUN echo "$(uname -m)"
+
+RUN npm install
+
+RUN npm rebuild 
+
+RUN npm test
+
+RUN npm run build
+
+RUN npm prune --production
 
 # Step 2: Packages assets for serving
 FROM node:10-alpine AS serve

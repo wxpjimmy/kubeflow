@@ -60,6 +60,8 @@ const (
 	kubeflowEdit        = "kubeflow-edit"
 	kubeflowView        = "kubeflow-view"
 	istioInjectionLabel = "istio-injection"
+	rootNamespace       = "root-ns"
+	kfPartition         = "kf-partition"
 )
 
 var kubeflowNamespaceLabels = map[string]string{
@@ -86,6 +88,7 @@ type ProfileReconciler struct {
 	UserIdHeader     string
 	UserIdPrefix     string
 	WorkloadIdentity string
+	RootNamespace    string
 }
 
 // Reconcile reads that state of the cluster for a Profile object and makes changes based on the state read
@@ -128,6 +131,17 @@ func (r *ProfileReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error)
 			Name: instance.Name,
 		},
 	}
+
+	// amend extra labels for namespace (root-ns, kf-partition)
+	if instance.Labels != nil {
+		for k, v := range instance.Labels {
+			ns.Labels[k] = v
+		}
+		ns.Labels[kfPartition] = instance.Name
+	} else {
+		logger.Info("Found empty Labels in Profile!", "Profile", instance)
+	}
+
 	updateNamespaceLabels(ns)
 	if err := controllerutil.SetControllerReference(instance, ns, r.Scheme); err != nil {
 		IncRequestErrorCounter("error setting ControllerReference", SEVERITY_MAJOR)

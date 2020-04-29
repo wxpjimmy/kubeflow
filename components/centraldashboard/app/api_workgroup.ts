@@ -118,7 +118,8 @@ export class WorkgroupApi {
     private platformInfo: PlatformInfo;
     constructor(
         private profilesService: DefaultApi,
-        private k8sService: KubernetesService) {}
+        private k8sService: KubernetesService,
+        private rootNamespace: string) {}
     /** Retrieves and memoizes the PlatformInfo. */
     private async getPlatformInfo(): Promise<PlatformInfo> {
         if (!this.platformInfo) {
@@ -279,9 +280,11 @@ export class WorkgroupApi {
             try {
                 const namespace = profile.namespace || req.user.username;
                 // Use the request body if provided, fallback to auth headers
+                console.info(`name: ${namespace}, namespace: ${this.rootNamespace}`)
                 await this.profilesService.createProfile({
                     metadata: {
                         name: namespace,
+                        namespace: this.rootNamespace,
                     },
                     spec: {
                         owner: {

@@ -27,6 +27,7 @@ describe('Workgroup API', () => {
     const newAPI = () => new WorkgroupApi(
         mockProfilesService,
         mockK8sService,
+        "kubeflow",
     );
 
     describe('Environment Information', () => {
@@ -310,6 +311,7 @@ describe('Workgroup API', () => {
             expect(mockProfilesService.createProfile).toHaveBeenCalledWith({
                 metadata: {
                     name: 'anonymous',
+                    namespace: "kubeflow",
                 },
                 spec: {
                     owner: {
@@ -329,6 +331,7 @@ describe('Workgroup API', () => {
             expect(mockProfilesService.createProfile).toHaveBeenCalledWith({
                 metadata: {
                     name: 'test',
+                    namespace: "kubeflow",
                 },
                 spec: {
                     owner: {
@@ -351,6 +354,7 @@ describe('Workgroup API', () => {
             expect(mockProfilesService.createProfile).toHaveBeenCalledWith({
                 metadata: {
                     name: 'a_different_namespace',
+                    namespace: "kubeflow",
                 },
                 spec: {
                     owner: {
@@ -366,6 +370,7 @@ describe('Workgroup API', () => {
                 .withArgs({
                     metadata: {
                         name: 'test',
+                        namespace: "kubeflow",
                     },
                     spec: {
                         owner: {

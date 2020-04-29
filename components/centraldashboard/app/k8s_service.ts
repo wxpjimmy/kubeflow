@@ -55,6 +55,7 @@ export class KubernetesService {
     if (context && context.namespace) {
       this.namespace = context.namespace;
     }
+    console.info(`initializing namespace: ${this.namespace}`)
     this.coreAPI = this.kubeConfig.makeApiClient(k8s.Core_v1Api);
     this.customObjectsAPI =
         this.kubeConfig.makeApiClient(k8s.Custom_objectsApi);

@@ -28,6 +28,7 @@ const {
   PROFILES_KFAM_SERVICE_PORT = '8081',
   USERID_HEADER = 'X-Goog-Authenticated-User-Email',
   USERID_PREFIX = 'accounts.google.com:',
+  ROOT_NAMESPACE = "",
 } = process.env;
 
 
@@ -42,6 +43,7 @@ async function main() {
   const metricsService = await getMetricsService(k8sService);
   console.info(`Using Profiles service at ${profilesServiceUrl}`);
   const profilesService = new DefaultApi(profilesServiceUrl);
+  console.info(`root namespace: ${ROOT_NAMESPACE}`)
 
   app.use(express.json());
   app.use(express.static(frontEnd));
@@ -64,7 +66,7 @@ async function main() {
     });
   });
   app.use('/api', new Api(k8sService, metricsService).routes());
-  app.use('/api/workgroup', new WorkgroupApi(profilesService, k8sService).routes());
+  app.use('/api/workgroup', new WorkgroupApi(profilesService, k8sService, ROOT_NAMESPACE ).routes());
   app.use('/api', (req: Request, res: Response) => 
     apiError({
       res,
